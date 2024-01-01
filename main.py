@@ -411,7 +411,7 @@ class Agent:
         return game
 
     @staticmethod
-    def training(best_of = 9, nb_loses = 15, depth = 2, learning_rate = 0.2): # nb_loses : nombre de partie perdu avant d'etre eliminer
+    def training(best_of = 5, nb_loses = 7, depth = 2, learning_rate = 0.2, nb_of_bot = 100): # nb_loses : nombre de partie perdu avant d'etre eliminer
         while(True):
             agent_tab = []
             root = tk.Tk()
@@ -428,82 +428,101 @@ class Agent:
 
             if Agent.generation > 0:
                 #mixe génétique entre ag1 et ag2
-                for n in range(100):
+                for n in range(nb_of_bot//7):
                     agent = Agent(game)
                     agent.mix_gen(ag1, ag2)
                     agent_tab.append(agent.copy())
 
                 #mixe génétique entre ag1 et ag3
-                for n in range(100):
+                for n in range(nb_of_bot//7):
                     agent = Agent(game)
                     agent.mix_gen(ag1, ag3)
                     agent_tab.append(agent.copy())
 
                 #mixe génétique entre ag2 et ag3
-                for n in range(100):
+                for n in range(nb_of_bot//7):
                     agent = Agent(game)
                     agent.mix_gen(ag2, ag3)
                     agent_tab.append(agent.copy())
+                
 
-                for i in range(12):
+                #variante de ag1
+                for i in range(nb_of_bot//7):
                     agent = ag1.copy()
-                    agent.gen_change(i, Agent.amount(learning_rate), True)
-                    agent_tab.append(agent)
-                
-                for i in range(12):
-                    agent = ag1.copy()
-                    agent.gen_change(i, Agent.amount(learning_rate), False)
-                    agent_tab.append(agent)
-                
-                for i in range(12):
+                    for j in range(12):
+                        rand = random.randint(1,10)
+                        if rand < 7:
+                            if random.randint(0,1):
+                                agent.gen_change(j, Agent.amount(learning_rate), True)
+                            else:
+                                agent.gen_change(j, Agent.amount(learning_rate), False)
+                        elif rand < 9:
+                            if j < 4:
+                                agent.change_gen(j, random.uniform(0, 1))
+                            else:
+                                agent.change_gen(j, random.uniform(-1, 1))  
+
+                #variante de ag2
+                for i in range(nb_of_bot//7):
                     agent = ag2.copy()
-                    agent.gen_change(i, Agent.amount(learning_rate), True)
-                    agent_tab.append(agent)
-                
-                for i in range(12):
-                    agent = ag2.copy()
-                    agent.gen_change(i, Agent.amount(learning_rate), False)
-                    agent_tab.append(agent)
-                
-                for i in range(12):
-                    agent = ag3.copy()
-                    agent.gen_change(i, Agent.amount(learning_rate), True)
-                    agent_tab.append(agent)
-                
-                for i in range(12):
-                    agent = ag3.copy()
-                    agent.gen_change(i, Agent.amount(learning_rate), False)
-                    agent_tab.append(agent)
+                    for j in range(12):
+                        rand = random.randint(1,10)
+                        if rand < 7:
+                            if random.randint(0,1):
+                                agent.gen_change(j, Agent.amount(learning_rate), True)
+                            else:
+                                agent.gen_change(j, Agent.amount(learning_rate), False)
+                        elif rand < 9:
+                            if j < 4:
+                                agent.change_gen(j, random.uniform(0, 1))
+                            else:
+                                agent.change_gen(j, random.uniform(-1, 1))  
             
-            while(len(agent_tab) < 400):
+                #variante de ag3
+                for i in range(nb_of_bot//7):
+                    agent = ag3.copy()
+                    for j in range(12):
+                        rand = random.randint(1,10)
+                        if rand < 7:
+                            if random.randint(0,1):
+                                agent.gen_change(j, Agent.amount(learning_rate), True)
+                            else:
+                                agent.gen_change(j, Agent.amount(learning_rate), False)
+                        elif rand < 9:
+                            if j < 4:
+                                agent.change_gen(j, random.uniform(0, 1))
+                            else:
+                                agent.change_gen(j, random.uniform(-1, 1))   
+
+            while(len(agent_tab) < nb_of_bot):
                 agent = Agent(game)
                 agent.random_poids()
                 agent_tab.append(agent)
 
-            for i in range(400):
+            for i in range(nb_of_bot):
                 agent_tab[i].Print_poids()
                 print("")
             
-            while(len(agent_tab) > 6):
-                print("avancement : ", (400-len(agent_tab))/394*100, "%")
+            while(len(agent_tab) > 3):
+                print("avancement : ", (nb_of_bot-len(agent_tab))/(nb_of_bot-3)*100, "%")
                 random.shuffle(agent_tab)
                 for i in range(len(agent_tab)-1):
-                    Agent.match_of_IA(agent_tab[i], agent_tab[i+1], best_of, depth)
+                    Agent.match_of_IA(agent_tab[i], agent_tab[i+1], Agent.Best_of(best_of), depth)
                     print("     ", (i/(len(agent_tab)-1))*100, "%")
                 tab_pop = []
                 tab_pop_exist = False
                 for i in range(len(agent_tab)):
-                    if agent_tab[i].defeat > nb_loses:
+                    if agent_tab[i].defeat > Agent.Nb_loss(nb_loses):
                         tab_pop_exist = True
                         tab_pop.append(i)
                 if tab_pop_exist:        
                     for i in range(len(tab_pop)):    
                         if 3 < len(agent_tab):
                             agent_tab.pop(tab_pop[i]-i)
-                if(len(agent_tab)%2 == 1):
+                if(len(agent_tab)%2 == 1 and len(agent_tab) != 3):
                     agent = Agent(game)
                     agent.random_poids()
-                    agent.defeat = nb_loses
+                    agent.defeat = Agent.Nb_loss(nb_loses)
                     agent_tab.append(agent)
                     
             agent_tab.sort(key=lambda agent: agent.defeat)
@@ -516,9 +535,37 @@ class Agent:
             print("generation : ", Agent.generation)
             print("")
 
+    def get_gen(self, neurone):
+        if neurone < 4:
+            return self.poids_A[neurone]
+        elif neurone < 8:
+            return self.poids_B_1[neurone-4]
+        else:
+            return self.poids_B_2[neurone-8]
         
-
-
+    def change_gen(self, neurone, new_gen):
+        if neurone < 4:
+            self.poids_A[neurone] = new_gen
+        elif neurone < 8:
+            self.poids_B_1[neurone-4] = new_gen
+        else:
+            self.poids_B_2[neurone-8] = new_gen
+        
+    @staticmethod
+    def Best_of(best_of):
+        x = 1 + 2*(Agent.generation//10)
+        if x > best_of:
+            return best_of
+        else:
+            return x
+        
+    @staticmethod
+    def Nb_loss(nb_loss):
+        x = 2*(Agent.generation//10)
+        if x > nb_loss:
+            return nb_loss
+        else:
+            return x
 
     def random_poids(self):
         self.poids_A = [random.uniform(0, 1) for i in range(4)]
@@ -893,13 +940,16 @@ def Play_against_AI_good_colors():
 def IA_against_IA_show():
     root = tk.Tk()
     game = Puissance4GUI(root, 6, 7, True)
+    game = Agent.random_game(game, 2)
     agent_1 = Agent(game)
+    agent_1.load()
     agent_2 = Agent(game)
+    agent_2.load("poids_1.txt")
     game.current_player = 'X'
     
 
     def ia_1_play():
-        agent_1.play_best_move_V0(4)
+        agent_1.play_best_move_V0(5)
         #agent_1.play_best_move_V1(6, 6)
         #agent_1.play_best_move_test(4, 5)
         game.draw_board()  
@@ -967,9 +1017,15 @@ def Play():
 
 #  test
 def test():
-    Agent.training(5, 7, 2, 0.2)
+    Agent.training()
 
-    
+
+
+def test_best_of():
+    Agent.generation = 12
+    print(Agent.Best_of(9))
+    Agent.generation = 158
+    print(Agent.Best_of(9))
 
 def afficher_matrice(matrice):
     for ligne in matrice:
@@ -1022,9 +1078,14 @@ def test_gen_change():
 def test_match_of_IA():
     root = tk.Tk()
     game = Puissance4GUI(root, 6, 7, True)
-    ag1 = Agent(game)
-    ag2 = Agent(game)
-    Agent.match_of_IA(ag1, ag2, 5, 2)
+    ag_poids = Agent(game)
+    ag_poids.load()
+    ag_moi = Agent(game)
+    ag_moi.load("poids_1.txt")
+    if Agent.match_of_IA(ag_poids, ag_moi, 25, 2) == ag_poids:
+        print("poids gagne")
+    else:
+        print("moi gagne")
 
 if __name__ == '__main__':
     #Play_against_AI()
@@ -1032,12 +1093,14 @@ if __name__ == '__main__':
     #IA_against_IA_show()
     #Play()
     #test_matrice()
-    #test_match_of_IA()
+    test_match_of_IA()
     #test_save()
     #test_load()
     #test_mix_gen()
     #test_gen_change()
-    test()
+    #test_best_of()
+
+    #test()
 
     #  test de temps IA_againt_IA
     '''temp_1 = time.time()
