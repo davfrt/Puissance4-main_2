@@ -348,10 +348,10 @@ class Agent:
         return total_score
 
     @staticmethod
-    def IA_against_IA(ag1, ag2, depth):
+    def IA_against_IA(ag1, ag2, depth, nb_rand_move = 2):
         root = tk.Tk()
         game = Puissance4GUI(root, 6, 7, True)
-        game = Agent.random_game(game, 2)
+        game = Agent.random_game(game, nb_rand_move)
         ag1.game = game
         ag2.game = game
 
@@ -386,12 +386,67 @@ class Agent:
                 ag2.victory += 1
                 ag1.defeat += 1
 
+    def IA_against_IA_V2(ag1, ag2, depth, nb_rand_move = 2):
+        root = tk.Tk()
+        game = Puissance4GUI(root, 6, 7, True)
+        game = Agent.random_game(game, nb_rand_move)
+        game_2 = game.copy()
+        ag1.game = game
+        ag2.game = game
+
+        game.current_player = 'X'
+        game_2.current_player = 'X'
+
+        ag1.symbol = 'X'
+        ag2.symbol = 'O'
+        i=0
+        while not(game.is_winner("O") or game.is_winner("X") or game.is_draw()):
+            if i%2==0:
+                ag1.play_best_move_V0(depth)
+            else:
+                ag2.play_best_move_V0(depth)
+            i+=1
+
+        ag1.game = game_2
+        ag2.game = game_2
+        ag1.symbol = 'O'
+        ag2.symbol = 'X'
+
+        i=1
+        while not(game_2.is_winner("O") or game_2.is_winner("X") or game_2.is_draw()):
+            if i%2==0:
+                ag1.play_best_move_V0(depth)
+            else:
+                ag2.play_best_move_V0(depth)
+            i+=1
+
+        if game.is_winner("O"):
+            if game_2.is_winner("X") or game_2.is_draw():
+                ag2.victory += 1
+                ag1.defeat += 1
+        elif game.is_draw():
+            if game_2.is_winner("O"):
+                ag1.victory += 1
+                ag2.defeat += 1
+            elif game_2.is_winner("X"):
+                ag2.victory += 1
+                ag1.defeat += 1   
+        else:
+            if game_2.is_winner("O") or game_2.is_draw():
+                ag1.victory += 1
+                ag2.defeat += 1
+
+
+
     @staticmethod
     def match_of_IA(ag1, ag2, best_of, depth):
         ag1.victory = 0
         ag2.victory = 0
         for i in range(best_of):
-            Agent.IA_against_IA(ag1, ag2, depth)
+            print("ag1.victory : ", ag1.victory, "ag2.victory : ", ag2.victory)
+            print("")
+            #Agent.IA_against_IA(ag1, ag2, depth)
+            Agent.IA_against_IA_V2(ag1, ag2, depth)
             if ag1.victory > best_of // 2:
                 return ag1 
             elif ag2.victory > best_of // 2:
@@ -445,7 +500,6 @@ class Agent:
                     agent.mix_gen(ag2, ag3)
                     agent_tab.append(agent.copy())
                 
-
                 #variante de ag1
                 for i in range(nb_of_bot//7):
                     agent = ag1.copy()
@@ -1082,7 +1136,7 @@ def test_match_of_IA():
     ag_poids.load()
     ag_moi = Agent(game)
     ag_moi.load("poids_1.txt")
-    if Agent.match_of_IA(ag_poids, ag_moi, 25, 2) == ag_poids:
+    if Agent.match_of_IA(ag_poids, ag_moi, 199, 2) == ag_poids:
         print("poids gagne")
     else:
         print("moi gagne")
